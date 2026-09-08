@@ -485,19 +485,23 @@
     if (!iamResp.ok) throw new Error('IAM token request failed');
     const { access_token } = await iamResp.json();
 
-    const prompt = `NSAP Rules:
-1. IGNOAPS: Age>=60, BPL, no pension.
-2. IGNWPS: Female, widowed, age 40-79, BPL.
-3. IGNDPS: Disability>=80%, age 18-79, BPL.
-4. NFBS: Breadwinner died age 18-59, BPL.
-5. NOT_ELIGIBLE: None match.
-
-Applicant: ${data.applicant_name}, Age ${data.age}, ${data.gender}, ${data.marital_status}
-BPL:${data.is_bpl}, Disability:${data.disability_percentage}%, Breadwinner deceased:${data.breadwinner_deceased}(age ${data.breadwinner_age_at_death||'N/A'}), Existing pension:${data.existing_pension}
-Rule prediction: ${ruleScheme}
-
-Respond ONLY with JSON: {"predicted_scheme":"<code>","confidence":"<High|Medium|Low>","eligibility_summary":"<2 sentences>"}
-###`;
+    const schemeOptions = 'IGNOAPS|IGNWPS|IGNDPS|NFBS|NOT_ELIGIBLE';
+    const confOptions   = 'High|Medium|Low';
+    const prompt = [
+      'NSAP Rules:',
+      '1. IGNOAPS: Age>=60, BPL, no pension.',
+      '2. IGNWPS: Female, widowed, age 40-79, BPL.',
+      '3. IGNDPS: Disability>=80%, age 18-79, BPL.',
+      '4. NFBS: Breadwinner died age 18-59, BPL.',
+      '5. NOT_ELIGIBLE: None match.',
+      '',
+      'Applicant: ' + data.applicant_name + ', Age ' + data.age + ', ' + data.gender + ', ' + data.marital_status,
+      'BPL:' + data.is_bpl + ', Disability:' + data.disability_percentage + '%, Breadwinner deceased:' + data.breadwinner_deceased + '(age ' + (data.breadwinner_age_at_death||'N/A') + '), Existing pension:' + data.existing_pension,
+      'Rule prediction: ' + ruleScheme,
+      '',
+      'Respond ONLY with JSON: {"predicted_scheme":"(' + schemeOptions + ')","confidence":"(' + confOptions + ')","eligibility_summary":"2 sentences"}',
+      '###'
+    ].join('\n');
 
     const wxResp = await fetch(WX, {
       method:'POST',
