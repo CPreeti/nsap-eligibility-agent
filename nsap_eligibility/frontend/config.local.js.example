@@ -1,0 +1,20 @@
+/**
+ * NSAP Eligibility Predictor — Local Frontend Configuration
+ *
+ * SECURITY: This file is gitignored and must NEVER be committed to source control.
+ *
+ * HOW TO USE:
+ * 1. Copy this file to:  nsap_eligibility/frontend/config.local.js
+ * 2. Fill in your real IBM Cloud credentials below.
+ * 3. Add a script tag BEFORE the main script in index.html:
+ *      <script src="config.local.js"></script>
+ *
+ * For production deployments, use a backend proxy instead of this file.
+ */
+
+window.__WATSONX_CONFIG__ = {
+  apiKey:    'your-ibm-cloud-api-key-here',
+  projectId: 'your-watsonx-project-id-here',
+  wxUrl:     'https://eu-de.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29',
+  modelId:   'ibm/granite-4-h-small',
+};

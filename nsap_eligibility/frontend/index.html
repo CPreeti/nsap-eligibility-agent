@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NSAP Eligibility Predictor | Government of India</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --saffron: #FF9933;
+      --white: #FFFFFF;
+      --green: #138808;
+      --navy: #000080;
+      --light-bg: #f4f6fb;
+      --card-bg: #ffffff;
+      --border: #dde2ee;
+      --text: #1a2340;
+      --muted: #5a6478;
+      --success: #138808;
+      --error: #c0392b;
+      --warning: #e67e22;
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: var(--light-bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header { background: var(--navy); color: #fff; padding: 0; }
+    .gov-bar {
+      background: var(--saffron);
+      display: flex; align-items: center; gap: 14px; padding: 8px 24px;
+    }
+    .emblem {
+      width: 44px; height: 44px; background: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .gov-bar h1 { font-size: 15px; font-weight: 700; color: var(--navy); line-height: 1.3; }
+    .gov-bar p  { font-size: 11px; color: var(--navy); opacity: 0.8; }
+    .header-main {
+      background: var(--navy); padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-main h2 { font-size: 16px; font-weight: 600; color: #fff; }
+    .header-main span { font-size: 11px; color: #aab4d0; }
+    .tricolor-bar { height: 4px; background: linear-gradient(to right, #FF9933 33.3%, #fff 33.3% 66.6%, #138808 66.6%); }
+
+    /* Layout */
+    .container { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
+    .page-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+    @media (max-width: 760px) { .page-grid { grid-template-columns: 1fr; } }
+
+    /* Cards */
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .card-header {
+      background: var(--navy); color: #fff; padding: 12px 18px;
+      font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+    }
+    .card-body { padding: 18px; }
+
+    /* Form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    label .req { color: var(--error); margin-left: 2px; }
+    input, select {
+      border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px;
+      font-size: 13px; color: var(--text); background: #fff;
+      transition: border-color .15s; width: 100%;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0,0,128,.08); }
+    input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--navy); cursor: pointer; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+    .checkbox-row label { font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text); cursor: pointer; }
+    .section-divider { grid-column: 1 / -1; border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+    .section-label { grid-column: 1 / -1; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--saffron); padding: 4px 0 0; }
+
+    /* Button */
+    .btn-predict {
+      width: 100%; margin-top: 16px; padding: 12px; background: var(--navy);
+      color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 8px; transition: background .2s;
+    }
+    .btn-predict:hover { background: #0000aa; }
+    .btn-predict:disabled { background: #8890aa; cursor: not-allowed; }
+
+    /* Result */
+    .result-panel { display: none; }
+    .result-panel.visible { display: block; }
+    .scheme-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: .04em; margin-bottom: 12px; }
+    .badge-IGNOAPS  { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+    .badge-IGNWPS   { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+    .badge-IGNDPS   { background: #d1ecf1; color: #0c5460; border: 1px solid #17a2b8; }
+    .badge-NFBS     { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+    .badge-NOT_ELIGIBLE { background: #e2e3e5; color: #383d41; border: 1px solid #adb5bd; }
+    .result-name { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .result-scheme-full { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .info-row { display: flex; gap: 8px; padding: 8px 12px; background: var(--light-bg); border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+    .info-row strong { min-width: 120px; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .confidence-high   { color: var(--success); font-weight: 700; }
+    .confidence-medium { color: var(--warning); font-weight: 700; }
+    .confidence-low    { color: var(--error);   font-weight: 700; }
+    .next-steps-box {
+      background: #eaf4ea; border-left: 4px solid var(--green);
+      border-radius: 0 6px 6px 0; padding: 12px 14px;
+      font-size: 12.5px; color: #1a3c1a; margin-top: 12px; line-height: 1.7;
+    }
+    .next-steps-box strong { display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; color: var(--green); }
+    .cross-check { background: #fef9e7; border: 1px solid #f0c040; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #7d6608; margin-top: 8px; }
+
+    /* Schemes Sidebar */
+    .scheme-item { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+    .scheme-item-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; background: var(--light-bg); user-select: none; }
+    .scheme-item-header:hover { background: #e8ecf5; }
+    .scheme-code { font-weight: 700; font-size: 12px; color: var(--navy); }
+    .scheme-toggle { font-size: 16px; color: var(--muted); transition: transform .2s; }
+    .scheme-item.open .scheme-toggle { transform: rotate(180deg); }
+    .scheme-item-body { display: none; padding: 10px 12px; font-size: 12px; line-height: 1.7; }
+    .scheme-item.open .scheme-item-body { display: block; }
+    .scheme-item-body dt { font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; margin-top: 6px; }
+    .scheme-item-body dd { color: var(--text); }
+
+    /* Spinner */
+    .spinner { display: none; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Powered by */
+    .powered-bar { display: flex; align-items: center; gap: 8px; background: #f0f2fa; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; margin-top: 16px; font-size: 11px; color: var(--muted); }
+    .powered-bar strong { color: var(--navy); }
+
+    /* Footer */
+    footer { text-align: center; padding: 20px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); margin-top: 32px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="gov-bar">
+    <div class="emblem">&#127470;&#127475;</div>
+    <div>
+      <h1>Government of India &mdash; Ministry of Rural Development</h1>
+      <p>National Social Assistance Programme (NSAP) &mdash; Eligibility Prediction System</p>
+    </div>
+  </div>
+  <div class="header-main">
+    <h2>NSAP Eligibility Predictor &nbsp;|&nbsp; AI-Powered Scheme Classification</h2>
+    <span>Powered by IBM watsonx Granite-4</span>
+  </div>
+  <div class="tricolor-bar"></div>
+</header>
+
+<div class="container">
+  <div class="page-grid">
+
+    <!-- Left: Form + Result -->
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span>&#128203;</span> Applicant Details</div>
+        <div class="card-body">
+          <form id="nsapForm">
+            <div class="form-grid">
+
+              <div class="section-label">Basic Information</div>
+
+              <div class="form-group full">
+                <label>Full Name <span class="req">*</span></label>
+                <input type="text" id="applicant_name" placeholder="Enter applicant's full name" required />
+              </div>
+
+              <div class="form-group">
+                <label>Age (years) <span class="req">*</span></label>
+                <input type="number" id="age" placeholder="e.g. 65" min="0" max="120" required />
+              </div>
+
+              <div class="form-group">
+                <label>Gender <span class="req">*</span></label>
+                <select id="gender" required>
+                  <option value="">Select gender</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Marital Status <span class="req">*</span></label>
+                <select id="marital_status" required>
+                  <option value="">Select status</option>
+                  <option>Single</option>
+                  <option>Married</option>
+                  <option>Widowed</option>
+                  <option>Divorced</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Annual Income (Rs.)</label>
+                <input type="number" id="annual_income" placeholder="Household annual income" min="0" />
+              </div>
+
+              <hr class="section-divider" />
+              <div class="section-label">Location</div>
+
+              <div class="form-group">
+                <label>State</label>
+                <select id="state">
+                  <option value="">Select state</option>
+                  <option>Andhra Pradesh</option><option>Arunachal Pradesh</option>
+                  <option>Assam</option><option>Bihar</option><option>Chhattisgarh</option>
+                  <option>Goa</option><option>Gujarat</option><option>Haryana</option>
+                  <option>Himachal Pradesh</option><option>Jharkhand</option>
+                  <option>Karnataka</option><option>Kerala</option>
+                  <option>Madhya Pradesh</option><option>Maharashtra</option>
+                  <option>Manipur</option><option>Meghalaya</option><option>Mizoram</option>
+                  <option>Nagaland</option><option>Odisha</option><option>Punjab</option>
+                  <option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option>
+                  <option>Telangana</option><option>Tripura</option>
+                  <option>Uttar Pradesh</option><option>Uttarakhand</option>
+                  <option>West Bengal</option><option>Delhi</option>
+                  <option>Jammu and Kashmir</option><option>Ladakh</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>District</label>
+                <input type="text" id="district" placeholder="Enter district name" />
+              </div>
+
+              <hr class="section-divider" />
+              <div class="section-label">Eligibility Conditions</div>
+
+              <div class="form-group full">
+                <div class="checkbox-row">
+                  <input type="checkbox" id="is_bpl" />
+                  <label for="is_bpl">Household is Below Poverty Line (BPL) <span class="req">*</span></label>
+                </div>
+                <div class="checkbox-row">
+                  <input type="checkbox" id="existing_pension" />
+                  <label for="existing_pension">Already receiving a government pension</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Disability % (0 if none)</label>
+                <input type="number" id="disability_percentage" placeholder="0" min="0" max="100" value="0" />
+              </div>
+
+              <div class="form-group">
+                <label>Breadwinner Age at Death</label>
+                <input type="number" id="breadwinner_age_at_death" placeholder="Leave blank if N/A" min="0" max="120" />
+              </div>
+
+              <div class="form-group full">
+                <div class="checkbox-row">
+                  <input type="checkbox" id="breadwinner_deceased" />
+                  <label for="breadwinner_deceased">Primary breadwinner of family has recently died</label>
+                </div>
+              </div>
+
+            </div>
+
+            <button type="submit" class="btn-predict" id="predictBtn">
+              <div class="spinner" id="spinner"></div>
+              <span id="btnText">&#128269; Predict NSAP Scheme</span>
+            </button>
+          </form>
+
+          <div class="powered-bar">
+            <strong>Powered by:</strong>
+            IBM watsonx Granite-4 (ibm/granite-4-h-small) &nbsp;|&nbsp;
+            IBM Cloud EU-DE &nbsp;|&nbsp;
+            watsonx Orchestrate
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div class="card result-panel" id="resultPanel">
+        <div class="card-header"><span>&#9989;</span> Prediction Result</div>
+        <div class="card-body" id="resultBody"></div>
+      </div>
+    </div>
+
+    <!-- Right: Schemes Info -->
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span>&#128214;</span> NSAP Scheme Guide</div>
+        <div class="card-body">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Click any scheme to view full eligibility criteria.</p>
+
+          <div class="scheme-item" onclick="toggleScheme(this)">
+            <div class="scheme-item-header">
+              <div><div class="scheme-code">IGNOAPS</div><div style="font-size:11px;color:var(--muted);">Old Age Pension</div></div>
+              <span class="scheme-toggle">&#9662;</span>
+            </div>
+            <div class="scheme-item-body">
+              <dl>
+                <dt>Who Qualifies</dt><dd>BPL citizens aged 60+ years</dd>
+                <dt>Central Benefit</dt><dd>Rs.200/month (60-79 yrs), Rs.500/month (80+ yrs)</dd>
+                <dt>Key Conditions</dt><dd>BPL; NOT receiving any other pension</dd>
+                <dt>Documents</dt><dd>Aadhaar, BPL certificate, age proof, bank passbook</dd>
+              </dl>
+            </div>
+          </div>
+
+          <div class="scheme-item" onclick="toggleScheme(this)">
+            <div class="scheme-item-header">
+              <div><div class="scheme-code">IGNWPS</div><div style="font-size:11px;color:var(--muted);">Widow Pension</div></div>
+              <span class="scheme-toggle">&#9662;</span>
+            </div>
+            <div class="scheme-item-body">
+              <dl>
+                <dt>Who Qualifies</dt><dd>BPL widows aged 40-79 years</dd>
+                <dt>Central Benefit</dt><dd>Rs.300/month</dd>
+                <dt>Key Conditions</dt><dd>Female, widowed, age 40-79, BPL household</dd>
+                <dt>Documents</dt><dd>Aadhaar, BPL cert, spouse death cert, age proof, bank passbook</dd>
+              </dl>
+            </div>
+          </div>
+
+          <div class="scheme-item" onclick="toggleScheme(this)">
+            <div class="scheme-item-header">
+              <div><div class="scheme-code">IGNDPS</div><div style="font-size:11px;color:var(--muted);">Disability Pension</div></div>
+              <span class="scheme-toggle">&#9662;</span>
+            </div>
+            <div class="scheme-item-body">
+              <dl>
+                <dt>Who Qualifies</dt><dd>BPL persons with severe disabilities (>=80%), aged 18-79</dd>
+                <dt>Central Benefit</dt><dd>Rs.300/month</dd>
+                <dt>Key Conditions</dt><dd>Disability certificate >= 80%; age 18-79; BPL</dd>
+                <dt>Documents</dt><dd>Aadhaar, BPL cert, disability certificate (>=80%), bank passbook</dd>
+              </dl>
+            </div>
+          </div>
+
+          <div class="scheme-item" onclick="toggleScheme(this)">
+            <div class="scheme-item-header">
+              <div><div class="scheme-code">NFBS</div><div style="font-size:11px;color:var(--muted);">Family Benefit Scheme</div></div>
+              <span class="scheme-toggle">&#9662;</span>
+            </div>
+            <div class="scheme-item-body">
+              <dl>
+                <dt>Who Qualifies</dt><dd>BPL households that lost their primary breadwinner</dd>
+                <dt>Central Benefit</dt><dd>Rs.20,000 one-time lump sum</dd>
+                <dt>Key Conditions</dt><dd>Breadwinner died aged 18-59; BPL; apply within 90 days</dd>
+                <dt>Documents</dt><dd>Aadhaar, BPL cert, death certificate, bank passbook</dd>
+              </dl>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;padding:10px 12px;background:#f0f4ff;border-radius:6px;font-size:11.5px;color:var(--navy);">
+            <strong>Note:</strong> States may add top-up over central amounts.
+            Apply at: <a href="https://nsap.nic.in" style="color:var(--navy);font-weight:600;">nsap.nic.in</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span>&#129302;</span> AI Model Details</div>
+        <div class="card-body">
+          <dl style="font-size:12px;line-height:2;">
+            <dt style="font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;">Model</dt>
+            <dd>ibm/granite-4-h-small</dd>
+            <dt style="font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;">Platform</dt>
+            <dd>IBM watsonx.ai — EU Frankfurt</dd>
+            <dt style="font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;">Classification</dt>
+            <dd>Multi-class (5 classes)</dd>
+            <dt style="font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;">Approach</dt>
+            <dd>Hybrid: Rule-based + LLM reasoning</dd>
+            <dt style="font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;">Classes</dt>
+            <dd>IGNOAPS · IGNWPS · IGNDPS · NFBS · NOT_ELIGIBLE</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  National Social Assistance Programme (NSAP) Eligibility Predictor &nbsp;|&nbsp;
+  Ministry of Rural Development, Government of India &nbsp;|&nbsp;
+  Powered by IBM watsonx AI &nbsp;|&nbsp;
+  <a href="https://nsap.nic.in" style="color:var(--navy);">nsap.nic.in</a><br><br>
+  <span style="font-size:10px;">This tool is for assistance only. Final eligibility is subject to official verification by the competent authority.</span>
+  <br><br><span style="font-size:10px;color:#aaa;">Made with IBM Bob</span>
+</footer>
+
+<!-- Local dev credentials (gitignored). Remove before deploying to production. -->
+<script src="config.local.js"></script>
+<script>
+  function toggleScheme(el) { el.classList.toggle('open'); }
+
+  function ruleBased(d) {
+    if (!d.is_bpl) return 'NOT_ELIGIBLE';
+    if (d.breadwinner_deceased && d.breadwinner_age_at_death >= 18 && d.breadwinner_age_at_death <= 59) return 'NFBS';
+    if (d.disability_percentage >= 80 && d.age >= 18 && d.age <= 79) return 'IGNDPS';
+    if (d.gender === 'Female' && d.marital_status === 'Widowed' && d.age >= 40 && d.age <= 79) return 'IGNWPS';
+    if (d.age >= 60 && !d.existing_pension) return 'IGNOAPS';
+    return 'NOT_ELIGIBLE';
+  }
+
+  const SCHEME_NAMES = {
+    IGNOAPS:'Indira Gandhi National Old Age Pension Scheme',
+    IGNWPS:'Indira Gandhi National Widow Pension Scheme',
+    IGNDPS:'Indira Gandhi National Disability Pension Scheme',
+    NFBS:'National Family Benefit Scheme',
+    NOT_ELIGIBLE:'Not Eligible for any NSAP scheme'
+  };
+  const BENEFITS = {
+    IGNOAPS:'Rs.200-500/month (Centre) + State top-up',
+    IGNWPS:'Rs.300/month (Centre) + State top-up',
+    IGNDPS:'Rs.300/month (Centre) + State top-up',
+    NFBS:'Rs.20,000 one-time payment',
+    NOT_ELIGIBLE:'N/A'
+  };
+  const NEXT_STEPS = {
+    IGNOAPS:'Visit your local Gram Panchayat/Block Development Office with Aadhaar, BPL certificate, age proof, and bank passbook to apply for IGNOAPS.',
+    IGNWPS:'Visit your local Gram Panchayat/Block Development Office with Aadhaar, BPL certificate, spouse death certificate, age proof, and bank passbook to apply for IGNWPS.',
+    IGNDPS:'Visit your local Gram Panchayat/Block Development Office with Aadhaar, BPL certificate, disability certificate (>=80%), age proof, and bank passbook to apply for IGNDPS.',
+    NFBS:'Visit your local Gram Panchayat/Block Development Office within 90 days with Aadhaar, BPL certificate, death certificate, and bank passbook to apply for NFBS.',
+    NOT_ELIGIBLE:'The applicant does not meet current NSAP eligibility criteria. Consider state-level schemes or MGNREGS for employment support.'
+  };
+
+  function getExplanation(d, scheme) {
+    const bpl = d.is_bpl ? 'BPL household ✓' : 'Non-BPL ✗';
+    switch(scheme) {
+      case 'IGNOAPS': return `${bpl} | Age ${d.age} >= 60 ✓ | No existing pension ✓ — Qualifies for old age pension.`;
+      case 'IGNWPS':  return `${bpl} | Female ✓ | Widowed ✓ | Age ${d.age} (40-79) ✓ — Qualifies for widow pension.`;
+      case 'IGNDPS':  return `${bpl} | Disability ${d.disability_percentage}% >= 80% ✓ | Age ${d.age} (18-79) ✓ — Qualifies for disability pension.`;
+      case 'NFBS':    return `${bpl} | Breadwinner deceased aged ${d.breadwinner_age_at_death} (18-59) ✓ — Qualifies for family benefit.`;
+      default:        return `${bpl} — Does not meet specific criteria for any of the four NSAP sub-schemes.`;
+    }
+  }
+
+  // ── Watsonx configuration ──────────────────────────────────────────────────
+  // SECURITY: Credentials must NOT be hardcoded here for production deployments.
+  // Use one of these approaches:
+  //   1. Backend proxy: serve this page from a server that injects credentials
+  //      server-side and forwards requests to IBM watsonx (RECOMMENDED).
+  //   2. Build-time injection: your CI/CD pipeline replaces the __VAR__ tokens
+  //      below before deploying the static file.
+  //   3. Local dev only: set window.__WATSONX_CONFIG__ from a gitignored file.
+  //
+  // For local development, create a file `frontend/config.local.js` (gitignored)
+  // with: window.__WATSONX_CONFIG__ = { apiKey: '...', projectId: '...' };
+  // and include it with <script src="config.local.js"></script> before this script.
+  const _cfg = (typeof window.__WATSONX_CONFIG__ !== 'undefined')
+    ? window.__WATSONX_CONFIG__ : {};
+
+  const WATSONX_CONFIG = {
+    iamUrl:    'https://iam.cloud.ibm.com/identity/token',
+    wxUrl:     _cfg.wxUrl     || '__WATSONX_AI_ENDPOINT__',
+    apiKey:    _cfg.apiKey    || '__IBM_CLOUD_API_KEY__',
+    projectId: _cfg.projectId || '__PROJECT_ID__',
+    modelId:   _cfg.modelId   || '__MODEL_ID__',
+  };
+
+  async function callWatsonx(data, ruleScheme) {
+    const { iamUrl: IAM, wxUrl: WX, apiKey: KEY, projectId, modelId } = WATSONX_CONFIG;
+
+    if (!KEY || KEY.startsWith('__') || !projectId || projectId.startsWith('__')) {
+      throw new Error(
+        'IBM Cloud credentials not configured. ' +
+        'Set window.__WATSONX_CONFIG__ in frontend/config.local.js for local dev, ' +
+        'or inject credentials via your deployment pipeline.'
+      );
+    }
+
+    const iamResp = await fetch(IAM, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`grant_type=urn%3Aibm%3Aparams%3Aoauth%3Agrant-type%3Aapikey&apikey=${KEY}`
+    });
+    if (!iamResp.ok) throw new Error('IAM token request failed');
+    const { access_token } = await iamResp.json();
+
+    const prompt = `NSAP Rules:
+1. IGNOAPS: Age>=60, BPL, no pension.
+2. IGNWPS: Female, widowed, age 40-79, BPL.
+3. IGNDPS: Disability>=80%, age 18-79, BPL.
+4. NFBS: Breadwinner died age 18-59, BPL.
+5. NOT_ELIGIBLE: None match.
+
+Applicant: ${data.applicant_name}, Age ${data.age}, ${data.gender}, ${data.marital_status}
+BPL:${data.is_bpl}, Disability:${data.disability_percentage}%, Breadwinner deceased:${data.breadwinner_deceased}(age ${data.breadwinner_age_at_death||'N/A'}), Existing pension:${data.existing_pension}
+Rule prediction: ${ruleScheme}
+
+Respond ONLY with JSON: {"predicted_scheme":"<code>","confidence":"<High|Medium|Low>","eligibility_summary":"<2 sentences>"}
+###`;
+
+    const wxResp = await fetch(WX, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json','Authorization':`Bearer ${access_token}`},
+      body: JSON.stringify({
+        model_id: modelId,
+        project_id: projectId,
+        input: prompt,
+        parameters:{decoding_method:'greedy',max_new_tokens:200,stop_sequences:['###'],temperature:0.1}
+      })
+    });
+    if (!wxResp.ok) throw new Error('watsonx API call failed');
+    const wxData = await wxResp.json();
+    const gen = wxData?.results?.[0]?.generated_text || '';
+    const s = gen.indexOf('{'), e = gen.lastIndexOf('}')+1;
+    if (s >= 0 && e > s) return JSON.parse(gen.substring(s, e));
+    throw new Error('Could not parse LLM response');
+  }
+
+  function renderResult(name, scheme, fullName, conf, summary, benefit, steps, ruleScheme) {
+    const confClass = `confidence-${conf.toLowerCase()}`;
+    const match = scheme === ruleScheme;
+    document.getElementById('resultBody').innerHTML = `
+      <span class="scheme-badge badge-${scheme}">${scheme}</span>
+      <div class="result-name">${name}</div>
+      <div class="result-scheme-full">${fullName}</div>
+      <div class="info-row"><strong>Confidence</strong><span class="${confClass}">${conf}</span></div>
+      <div class="info-row"><strong>Monthly Benefit</strong><span>${benefit}</span></div>
+      <div class="info-row"><strong>AI Model</strong><span>IBM watsonx Granite-4 (eu-de)</span></div>
+      <div class="info-row"><strong>Summary</strong><span>${summary}</span></div>
+      ${!match?`<div class="cross-check">Warning: Rule-based predicted <strong>${ruleScheme}</strong> — review manually.</div>`:''}
+      <div class="next-steps-box"><strong>Next Steps</strong>${steps}</div>
+      <div style="margin-top:12px;text-align:center;">
+        <a href="https://nsap.nic.in" target="_blank"
+           style="display:inline-block;padding:8px 20px;background:var(--navy);color:#fff;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;">
+          Apply at nsap.nic.in
+        </a>
+      </div>`;
+    const panel = document.getElementById('resultPanel');
+    panel.classList.add('visible');
+    panel.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  document.getElementById('nsapForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('predictBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    btnText.textContent = 'Analyzing with IBM watsonx...';
+
+    const data = {
+      applicant_name: document.getElementById('applicant_name').value.trim(),
+      age: parseInt(document.getElementById('age').value)||0,
+      gender: document.getElementById('gender').value,
+      marital_status: document.getElementById('marital_status').value,
+      is_bpl: document.getElementById('is_bpl').checked,
+      existing_pension: document.getElementById('existing_pension').checked,
+      disability_percentage: parseInt(document.getElementById('disability_percentage').value)||0,
+      breadwinner_deceased: document.getElementById('breadwinner_deceased').checked,
+      breadwinner_age_at_death: parseInt(document.getElementById('breadwinner_age_at_death').value)||null,
+      state: document.getElementById('state').value,
+      district: document.getElementById('district').value,
+      annual_income: parseFloat(document.getElementById('annual_income').value)||0
+    };
+
+    const ruleScheme = ruleBased(data);
+
+    try {
+      const llm = await callWatsonx(data, ruleScheme);
+      const s = llm.predicted_scheme || ruleScheme;
+      renderResult(data.applicant_name, s, SCHEME_NAMES[s], llm.confidence||'Medium',
+        llm.eligibility_summary||getExplanation(data,s), BENEFITS[s], NEXT_STEPS[s], ruleScheme);
+    } catch {
+      renderResult(data.applicant_name, ruleScheme, SCHEME_NAMES[ruleScheme], 'High',
+        getExplanation(data, ruleScheme), BENEFITS[ruleScheme], NEXT_STEPS[ruleScheme], ruleScheme);
+    }
+
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = 'Predict NSAP Scheme';
+  });
+</script>
+</body>
+</html>
