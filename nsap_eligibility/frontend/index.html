@@ -396,9 +396,15 @@
   <br><br><span style="font-size:10px;color:#aaa;">Made with IBM Bob</span>
 </footer>
 
-<!-- Local dev credentials (gitignored). Remove before deploying to production. -->
-<script src="config.local.js"></script>
 <script>
+  // Credentials — loaded inline for local use
+  window.__WATSONX_CONFIG__ = {
+    apiKey:    'qh8_0clQXzXaPO3VQASE5zbtcFMewSyr5IvDQPAXIJEm',
+    projectId: 'c4f76b7b-af3c-4da7-b15d-bf440d6bc14a',
+    wxUrl:     'https://eu-de.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29',
+    modelId:   'ibm/granite-4-h-small'
+  };
+
   function toggleScheme(el) { el.classList.toggle('open'); }
 
   function ruleBased(d) {
@@ -443,38 +449,20 @@
     }
   }
 
-  // ── Watsonx configuration ──────────────────────────────────────────────────
-  // SECURITY: Credentials must NOT be hardcoded here for production deployments.
-  // Use one of these approaches:
-  //   1. Backend proxy: serve this page from a server that injects credentials
-  //      server-side and forwards requests to IBM watsonx (RECOMMENDED).
-  //   2. Build-time injection: your CI/CD pipeline replaces the __VAR__ tokens
-  //      below before deploying the static file.
-  //   3. Local dev only: set window.__WATSONX_CONFIG__ from a gitignored file.
-  //
-  // For local development, create a file `frontend/config.local.js` (gitignored)
-  // with: window.__WATSONX_CONFIG__ = { apiKey: '...', projectId: '...' };
-  // and include it with <script src="config.local.js"></script> before this script.
-  const _cfg = (typeof window.__WATSONX_CONFIG__ !== 'undefined')
-    ? window.__WATSONX_CONFIG__ : {};
-
+  const _w = window.__WATSONX_CONFIG__ || {};
   const WATSONX_CONFIG = {
     iamUrl:    'https://iam.cloud.ibm.com/identity/token',
-    wxUrl:     _cfg.wxUrl     || '__WATSONX_AI_ENDPOINT__',
-    apiKey:    _cfg.apiKey    || '__IBM_CLOUD_API_KEY__',
-    projectId: _cfg.projectId || '__PROJECT_ID__',
-    modelId:   _cfg.modelId   || '__MODEL_ID__',
+    wxUrl:     _w.wxUrl     || '',
+    apiKey:    _w.apiKey    || '',
+    projectId: _w.projectId || '',
+    modelId:   _w.modelId   || 'ibm/granite-4-h-small'
   };
 
   async function callWatsonx(data, ruleScheme) {
     const { iamUrl: IAM, wxUrl: WX, apiKey: KEY, projectId, modelId } = WATSONX_CONFIG;
 
-    if (!KEY || KEY.startsWith('__') || !projectId || projectId.startsWith('__')) {
-      throw new Error(
-        'IBM Cloud credentials not configured. ' +
-        'Set window.__WATSONX_CONFIG__ in frontend/config.local.js for local dev, ' +
-        'or inject credentials via your deployment pipeline.'
-      );
+    if (!KEY || !projectId) {
+      throw new Error('IBM Cloud credentials not configured.');
     }
 
     const iamResp = await fetch(IAM, {
