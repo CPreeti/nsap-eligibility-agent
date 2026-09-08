@@ -16,3 +16,7 @@ __pycache__/
 # OS files
 Thumbs.db
 .DS_Store
+# Browser-saved page artefacts
+*.html.download
+*_files/
+NSAP Eligibility Predictor*
